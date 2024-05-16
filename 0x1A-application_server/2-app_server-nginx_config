@@ -1,32 +1,23 @@
-server {
-	listen 80 default_server;
-	listen [::]:80 ipv6only=on default_server;
-	server_name localhost;
+#!/usr/bin/env bash
+# This script configures Nginx to serve a Flask application from the route /airbnb-onepage/
 
-	root /var/www/html;
+set -euo pipefail
 
-	location /hbnb_static/ {
-		alias /data/web_static/current/;
-		autoindex off;
-	}
+# Update Nginx configuration file
+config_file="/etc/nginx/sites-available/default"
 
-	index index.html index.htm index.nginx-debian.html;
-	rewrite ^/redirect_me https://github.com/luischaparroc permanent;
+{
+    echo "server {
+    listen 80;
+    server_name _;
 
-	error_page 404 /custom_404.html;
+    location /airbnb-onepage/ {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}"
+} | sudo tee "$config_file" > /dev/null
 
-	location = /custom_404.html {
-		root /usr/share/nginx/html;
-		internal;
-	}
-
-	location /airbnb-onepage/ {
-		include proxy_params;
-                proxy_pass http://0.0.0.0:5000/airbnb-onepage/;
-        }
-
-	location / {
-		try_files $uri $uri/ =404;
-	}
-
-}
+# Restart Nginx
+sudo service nginx restart
